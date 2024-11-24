@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Предсказание цены на недвижимость</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <!-- Подключаем Leaflet -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <!-- Подключаем плагин для геокодера -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
+    <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="form-container">
+            <h1>Введите параметры для предсказания цены недвижимости</h1>
+
+            <form method="POST">
+                <div class="input-group">
+                    <label for="minutes_to_metro">Минут до метро:</label>
+                    <input type="number" step="0.1" name="minutes_to_metro" required>
+                </div>
+
+                <div class="input-group">
+                    <label for="number_of_rooms">Количество комнат:</label>
+                    <input type="number" name="number_of_rooms" required>
+                </div>
+
+                <div class="input-group">
+                    <label for="area">Общая площадь (м²):</label>
+                    <input type="number" name="area" required>
+                </div>
+
+                <div class="input-group">
+                    <label for="living_area">Жилая площадь (м²):</label>
+                    <input type="number" name="living_area" required>
+                </div>
+
+                <div class="input-group">
+                    <label for="kitchen_area">Площадь кухни (м²):</label>
+                    <input type="number" name="kitchen_area" required>
+                </div>
+
+                <div class="input-group">
+                    <label for="floor">Этаж:</label>
+                    <input type="number" name="floor" required>
+                </div>
+
+                <div class="input-group">
+                    <label for="number_of_floors">Количество этажей:</label>
+                    <input type="number" name="number_of_floors" required>
+                </div>
+
+                <div class="input-group">
+                    <label for="type_secondary">Вторичное жильё:</label>
+                    <input type="checkbox" name="type_secondary" value="1">
+                </div>
+
+                <!-- Карта -->
+                <div class="input-group">
+                    <label for="map">Выберите точку на карте:</label>
+                    <div id="map"></div>
+                    <input type="hidden" name="map_lat" id="map_lat">
+                    <input type="hidden" name="map_lon" id="map_lon">
+                </div>
+
+                <input type="submit" value="Предсказать цену">
+            </form>
+        </div>
+
+        <div class="result">
+            {% if predicted_price is not none %}
+                <h2>Предсказанная цена: {{ predicted_price | round(2) }} рублей</h2>
+                <h3>Введенные параметры:</h3>
+                <ul>
+                    {% for key, value in user_input.items() %}
+                        <li><strong>{{ key.replace('_', ' ').capitalize() }}:</strong> {{ value }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        </div>
+    </div>
+
+    <script>
+        // Инициализация карты
+        var map = L.map('map').setView([55.7558, 37.6173], 13);  // Москва, координаты центра
+
+        // Подключаем слой OpenStreetMap
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        // Изначальный маркер на карте
+        var marker = L.marker([55.7558, 37.6173]).addTo(map);
+
+        // Обработчик для кликов по карте
+        map.on('click', function(e) {
+            var lat = e.latlng.lat;
+            var lon = e.latlng.lng;
+            marker.setLatLng(e.latlng);  // Перемещаем маркер
+            document.getElementById("map_lat").value = lat;  // Сохраняем координаты в скрытые поля
+            document.getElementById("map_lon").value = lon;
+        });
+
+        // Добавляем поисковик по адресу (geocoding)
+        L.Control.geocoder().addTo(map);
+
+        var geocoder = L.Control.Geocoder.nominatim();
+        geocoder.on('markgeocode', function(event) {
+            var latlng = event.geocode.center;
+            marker.setLatLng(latlng);  // Перемещаем маркер
+            document.getElementById("map_lat").value = latlng.lat;
+            document.getElementById("map_lon").value = latlng.lng;
+        });
+    </script>
+</body>
+</html>
