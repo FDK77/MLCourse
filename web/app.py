@@ -52,8 +52,11 @@ def calculate_distance(lat1, lon1, lat2, lon2):
     return distance
 
 # Главная страница с формой
+# Главная страница с формой
 @app.route('/', methods=['GET', 'POST'])
 def index():
+    user_input = {}  # Пустой словарь по умолчанию для GET запроса
+
     if request.method == 'POST':
         # Получение значений из формы
         user_input = {
@@ -62,36 +65,66 @@ def index():
             "area": float(request.form['area']),
             "living_area": float(request.form['living_area']),
             "kitchen_area": float(request.form['kitchen_area']),
-            "floor": float(request.form['floor']),
-            "number_of_floors": float(request.form['number_of_floors']),
-            "type_secondary": float(request.form.get('type_secondary', 0)),  # Если галочка установлена, будет 1, иначе 0
+            "first_floor": float(request.form.get('first_floor', 0)),
+            "type_secondary": float(request.form.get('type_secondary', 0)),
             "map_lat": float(request.form['map_lat']),
             "map_lon": float(request.form['map_lon'])
         }
 
         # Рассчитываем расстояние от центра города
-        user_input["distance_to_centre"] = calculate_distance(CITY_LAT, CITY_LON, user_input["map_lat"], user_input["map_lon"])
+        user_input["distance_to_centre"] = calculate_distance(CITY_LAT, CITY_LON, user_input["map_lat"],
+                                                              user_input["map_lon"])
 
         # Загрузка Min-Max значений
         min_values, max_values = load_min_max_values()
 
-        # Нормализация пользовательского ввода
-        normalized_input = {key: min_max_normalization(user_input[key], min_values[key], max_values[key]) for key in
-                            user_input if key != 'map_lat' and key != 'map_lon'}
-
-        # Подготовка входных данных для предсказания
-        input_array = np.array([1] + list(normalized_input.values()))
-
-        # Загрузка весов модели (тета)
+        # Соответствие признаков с весами
         theta = load_theta()
 
-        # Предсказание цены
-        predicted_price = predict_price(input_array, theta)
+        # Вывод значений тета для каждого параметра
+        parameter_names = [
+            "Intercept (смещение)", "minutes_to_metro", "number_of_rooms", "area", "living_area",
+            "kitchen_area", "first_floor", "distance_to_centre", "type_secondary"
+        ]
 
-        # Отображение результата
+        # Нормализованные значения из формы
+        normalized_input = {
+            "minutes_to_metro": min_max_normalization(user_input["minutes_to_metro"], min_values["minutes_to_metro"],
+                                                      max_values["minutes_to_metro"]),
+            "number_of_rooms": min_max_normalization(user_input["number_of_rooms"], min_values["number_of_rooms"],
+                                                     max_values["number_of_rooms"]),
+            "area": min_max_normalization(user_input["area"], min_values["area"], max_values["area"]),
+            "living_area": min_max_normalization(user_input["living_area"], min_values["living_area"],
+                                                 max_values["living_area"]),
+            "kitchen_area": min_max_normalization(user_input["kitchen_area"], min_values["kitchen_area"],
+                                                  max_values["kitchen_area"]),
+            "first_floor": min_max_normalization(user_input["first_floor"], min_values["first_floor"],
+                                                 max_values["first_floor"]),
+            "distance_to_centre": min_max_normalization(user_input["distance_to_centre"],
+                                                        min_values["distance_to_centre"],
+                                                        max_values["distance_to_centre"]),
+            "type_secondary": min_max_normalization(user_input["type_secondary"], min_values["type_secondary"],
+                                                    max_values["type_secondary"]),
+        }
+
+        for param, normalized_value in normalized_input.items():
+            print(f"Параметр: {param}, Нормализованное значение: {normalized_value}")
+
+        # Подготовка входного вектора (с учетом смещения)
+        input_vector = np.array([1] + list(normalized_input.values()))
+
+        # Умножаем параметры на соответствующие веса
+        predicted_price = sum(input_vector[i] * theta[i] for i in range(len(input_vector)))
+
+
+        # Правильный способ вывести значения параметров и соответствующие веса
+        for i in range(len(input_vector)):
+            print(f"Значение: {input_vector[i]}, Тета: {theta[i]}")
+
         return render_template('index.html', predicted_price=predicted_price, user_input=user_input)
 
-    return render_template('index.html', predicted_price=None)
+    return render_template('index.html', predicted_price=None, user_input=user_input)
+
 
 if __name__ == '__main__':
     app.run(debug=True)

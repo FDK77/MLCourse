@@ -14,7 +14,7 @@ def haversine(lat1, lon1, lat2, lon2):
 
 # Пути к файлам
 project_root = os.path.abspath(os.path.dirname(__file__))
-coor_file = os.path.join(project_root, 'data', 'metro_coordinates.csv')
+coor_file = os.path.join(project_root, 'data', 'stations_data.csv')
 data_file = os.path.join(project_root, 'data', 'data.csv')
 output_file = os.path.join(project_root, 'data', 'data_cleaned.csv')
 
@@ -59,6 +59,10 @@ bool_columns = data_encoded.select_dtypes(include=['bool']).columns
 for col in bool_columns:
     data_encoded[col] = data_encoded[col].map({True: 1, False: 0})
 
+data_encoded["Floor"] = (data_encoded["Floor"] == 1).astype(int)
+
+data_encoded = data_encoded.drop(columns=['Number of floors'])
+
 # Переименование столбцов
 data_encoded.rename(columns={
     'Price': 'price',
@@ -69,8 +73,7 @@ data_encoded.rename(columns={
     'Area': 'area',
     'Living area': 'living_area',
     'Kitchen area': 'kitchen_area',
-    'Floor': 'floor',
-    'Number of floors': 'number_of_floors'
+    'Floor': 'first_floor',
 }, inplace=True)
 
 # Переместим параметр 'price' в последний столбец

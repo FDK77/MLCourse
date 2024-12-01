@@ -20,50 +20,45 @@
             <form method="POST">
                 <div class="input-group">
                     <label for="minutes_to_metro">Минут до метро:</label>
-                    <input type="number" step="0.1" name="minutes_to_metro" required>
+                    <input type="number" step="0.1" name="minutes_to_metro" value="{{ user_input['minutes_to_metro'] if user_input.get('minutes_to_metro') else '' }}" required>
                 </div>
 
                 <div class="input-group">
                     <label for="number_of_rooms">Количество комнат:</label>
-                    <input type="number" name="number_of_rooms" required>
+                    <input type="number" name="number_of_rooms" value="{{ user_input['number_of_rooms'] if user_input.get('number_of_rooms') else '' }}" required>
                 </div>
 
                 <div class="input-group">
                     <label for="area">Общая площадь (м²):</label>
-                    <input type="number" name="area" required>
+                    <input type="number" name="area" value="{{ user_input['area'] if user_input.get('area') else '' }}" required>
                 </div>
 
                 <div class="input-group">
                     <label for="living_area">Жилая площадь (м²):</label>
-                    <input type="number" name="living_area" required>
+                    <input type="number" name="living_area" value="{{ user_input['living_area'] if user_input.get('living_area') else '' }}" required>
                 </div>
 
                 <div class="input-group">
                     <label for="kitchen_area">Площадь кухни (м²):</label>
-                    <input type="number" name="kitchen_area" required>
+                    <input type="number" name="kitchen_area" value="{{ user_input['kitchen_area'] if user_input.get('kitchen_area') else '' }}" required>
                 </div>
 
                 <div class="input-group">
-                    <label for="floor">Этаж:</label>
-                    <input type="number" name="floor" required>
-                </div>
-
-                <div class="input-group">
-                    <label for="number_of_floors">Количество этажей:</label>
-                    <input type="number" name="number_of_floors" required>
+                    <label for="first_floor">Первый этаж:</label>
+                    <input type="checkbox" name="first_floor" value="1" {% if user_input.get('first_floor') == 1 %}checked{% endif %}>
                 </div>
 
                 <div class="input-group">
                     <label for="type_secondary">Вторичное жильё:</label>
-                    <input type="checkbox" name="type_secondary" value="1">
+                    <input type="checkbox" name="type_secondary" value="1" {% if user_input.get('type_secondary') == 1 %}checked{% endif %}>
                 </div>
 
                 <!-- Карта -->
                 <div class="input-group">
                     <label for="map">Выберите точку на карте:</label>
                     <div id="map"></div>
-                    <input type="hidden" name="map_lat" id="map_lat">
-                    <input type="hidden" name="map_lon" id="map_lon">
+                    <input type="hidden" name="map_lat" id="map_lat" value="{{ user_input['map_lat'] if user_input.get('map_lat') else '' }}">
+                    <input type="hidden" name="map_lon" id="map_lon" value="{{ user_input['map_lon'] if user_input.get('map_lon') else '' }}">
                 </div>
 
                 <input type="submit" value="Предсказать цену">
@@ -92,8 +87,10 @@
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         }).addTo(map);
 
-        // Изначальный маркер на карте
-        var marker = L.marker([55.7558, 37.6173]).addTo(map);
+        // Инициализация маркера с переданными координатами
+        var initialLat = {{ user_input['map_lat'] if user_input.get('map_lat') else 55.7558 }};  // Если данных нет, ставим по умолчанию
+        var initialLon = {{ user_input['map_lon'] if user_input.get('map_lon') else 37.6173 }};
+        var marker = L.marker([initialLat, initialLon]).addTo(map);
 
         // Обработчик для кликов по карте
         map.on('click', function(e) {
